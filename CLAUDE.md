@@ -10,7 +10,7 @@ README and folder docs are written in pt-BR.
 
 ## Commands
 
-Requires MATLAB + Simulink only (validated on R2026b). No toolboxes (Control System, YALMIP, etc.) are needed for the normal flow.
+Requires MATLAB + Simulink only (validated on R2025a). `simulation/hover.slx` is saved in R2025a format — saving it from a newer release breaks loading in R2025a; use Export Model to > Previous Version if needed. No toolboxes (Control System, YALMIP, etc.) are needed for the normal flow.
 
 ```matlab
 runHover                          % 10 s hover, writes results/hover.mat and results/hover.csv (overwrites)

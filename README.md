@@ -12,7 +12,7 @@ runHover
 
 O script configura os paths, valida o ganho salvo e executa 10 s de hover sem vento, com Euler (ode1) e passo de 0,004 s. Gera `results/hover.mat` e `results/hover.csv`; uma nova execução sobrescreve esses dois resultados. Não é preciso executar síntese de controle.
 
-Dependências de execução: **MATLAB e Simulink**. Validado no MATLAB/Simulink R2026b. As matrizes de projeto e o equilíbrio foram extraídos dos objetos históricos para arrays numéricos em `controller/hoverDesign.mat`, evitando exigir Control System Toolbox ou Simulink Control Design no uso cotidiano. YALMIP, SeDuMi, Optimization Toolbox e Robotics System Toolbox não são necessários para este fluxo.
+Dependências de execução: **MATLAB e Simulink**. Validado no MATLAB/Simulink R2025a; `simulation/hover.slx` está salvo no formato R2025a (versões mais novas abrem o arquivo, mas salvá-lo nelas impede a abertura no R2025a). As matrizes de projeto e o equilíbrio foram extraídos dos objetos históricos para arrays numéricos em `controller/hoverDesign.mat`, evitando exigir Control System Toolbox ou Simulink Control Design no uso cotidiano. YALMIP, SeDuMi, Optimization Toolbox e Robotics System Toolbox não são necessários para este fluxo.
 
 Configuração e outros experimentos:
 
