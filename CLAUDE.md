@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Course project (Robótica Probabilística, UFMG): compare EKF vs. scaled UKF accuracy when estimating the 16 states of a tilt-rotor UAV near hover. The plant and H∞ full-state controller are imported and validated; **sensors (`sensors/`) and filters (`filters/ekf/`, `filters/ukf_scaled/`) are not implemented yet** — those folders contain only placeholder READMEs. The proposal `2_Entrega___Rob_prob.pdf` (untracked) specifies the planned experiment: IMU + horizontal GPS + barometer + tilt-mechanism measurements, additive zero-mean Gaussian independent noise (diagonal R), a nominal scenario and a temporary GPS-outage scenario, and per-state RMSE over a single trajectory generated once and shared by both filters. Read its Section 3 before implementing sensors/filters.
+Course project (Robótica Probabilística, UFMG): compare EKF vs. scaled UKF accuracy when estimating the 16 states of a tilt-rotor UAV near hover. The plant and H∞ full-state controller are imported and validated; synthetic sensors (`sensors/`) are implemented (see `sensors/README.md`); **filters (`filters/ekf/`, `filters/ukf_scaled/`) are not implemented yet** — those folders contain only placeholder READMEs. The proposal `2_Entrega___Rob_prob.pdf` (untracked) specifies the planned experiment: IMU + horizontal GPS + barometer + tilt-mechanism measurements, additive zero-mean Gaussian independent noise (diagonal R), a nominal scenario and a temporary GPS-outage scenario, and per-state RMSE over a single trajectory generated once and shared by both filters. Read its Section 3 before implementing sensors/filters.
 
 README and folder docs are written in pt-BR.
 
@@ -14,7 +14,9 @@ Requires MATLAB + Simulink only (validated on R2025a). `simulation/hover.slx` is
 
 ```matlab
 runHover                          % 10 s hover, writes results/hover.mat and results/hover.csv (overwrites)
-run('tests/verifyHover.m')        % integration checks against the real Simulink model (the only test)
+run('tests/verifyHover.m')        % integration checks against the real Simulink model
+run('tests/verifySensors.m')      % measurement model, rates, noise statistics, seeding
+meas = generateMeasurements(result, Seed=1);  % 16-channel synthetic data, writes results/measurements.mat
 cfg = setupProject();             % paths + gain validation; returns config struct
 result = simulateHover(Duration=12, InitialState=x0, OriginalWind=true, SaveResults=false);
 ```
