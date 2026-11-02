@@ -40,4 +40,4 @@ From a shell: `matlab -batch "runHover"` / `matlab -batch "run('tests/verifyHove
 - `rotx/roty/rotz` in `plant/` are the project's own (original sign convention) and shadow toolbox versions intentionally.
 - Wind is off by default; `OriginalWind=true` enables the historical step (5 m/s in x at t = 10 s) baked into the SLX via `enableOriginalWind`.
 - Don't change plant dynamics, gains, saturations or solver settings in `hover.slx`; the README and `results/validation.md` document exactly which edits were made relative to the original model.
-- `results/` is gitignored except `.gitkeep`, `validation.md` and `migration-validation.md`.
+- `results/` is tracked (simulation data and figures are versioned and pushed).

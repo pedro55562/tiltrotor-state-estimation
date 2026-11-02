@@ -1,6 +1,3 @@
-results/*
-!results/.gitkeep
-!results/validation.md
 slprj/
 *.slxc
 *.autosave
@@ -8,4 +5,3 @@ slprj/
 simulation/*.slx.r*
 
 .migration-backups/
-!results/migration-validation.md
