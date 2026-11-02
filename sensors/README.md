@@ -30,12 +30,14 @@ Os desvios-padrão são parâmetros adotados na simulação, não especificaçõ
 - `sensorConfig.m`: nomes, unidades, σ, taxas, decimação em relação a `Ts`, `R`, `g_I`, `m_I`.
 - `measurementModel.m`: $h(x, u, \text{vento})$ sem ruído (16×1); também será usado pelos filtros.
 - `generateMeasurements.m`: gera as medições para toda a trajetória.
+- `plotMeasurements.m`: gráficos de verdade $h(x^{true},u)$ × medição, uma figura por sensor (giroscópio, acelerômetro, magnetômetro, posição GPS/barômetro, inclinação).
 
 ## Uso
 
 ```matlab
 result = simulateHover(SaveResults=false);
 meas = generateMeasurements(result, Seed=1);   % grava results/measurements.mat
+plotMeasurements(meas, OutputDir='results/figures');   % opcional: salva PNGs
 ```
 
 Campos de `meas`: `t`, `y` (N×16, `NaN` onde não há amostra nova), `available` (máscara lógica N×16, base da matriz de seleção $A_k$), `y_clean`, `noise`, `seed`, `sensors`, `channelNames`, `channelUnits`.
