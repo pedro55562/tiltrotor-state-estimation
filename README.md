@@ -26,7 +26,17 @@ result = simulateHover(Duration=10, InitialState=x0, SaveResults=false);
 
 % Mantém os degraus de vento do modelo histórico (primeiro degrau em 10 s):
 result = simulateHover(Duration=12, OriginalWind=true, SaveResults=false);
+
+% Trajetória em hélice (gera results/helix.mat e results/helix.csv):
+run('experiments/runHelix.m')
 ```
+
+`Trajectory` escolhe a referência seguida pelo controlador (`simulation/referenceTrajectory.m`):
+
+- `"hover"` (padrão): referência constante no equilíbrio, comportamento original.
+- `"helix"`: círculo horizontal de 1 m de raio partindo do equilíbrio, com velocidade angular que sobe suavemente até 0,5 rad/s em 4 s (≈ 0,5 m/s), e subida suave de 1 m em 20 s. Só x, y, z e suas derivadas saem de `x_eq`; o controlador inclina rotores e fuselagem como precisar. Sem *feedforward* de aceleração, o veículo segue a referência com atraso (erro de posição máximo ≈ 0,3 m em 30 s) e sem saturar os atuadores. Use `Duration` de pelo menos 20 s para incluir a subida completa.
+
+Com `SaveResults=true`, os arquivos são `results/<Trajectory>.mat` e `.csv`.
 
 A duração deve ser múltipla de 0,004 s. `InitialState` é um vetor coluna 16×1. `SimulationInput` recebe explicitamente os parâmetros e condições iniciais, sem depender de variáveis anteriores do workspace.
 
@@ -50,11 +60,11 @@ Os paths são adicionados explicitamente. Não use `addpath(genpath(...))`: isso
 
 O hover usa `TiltRotor4dot0Trim_Hover`: as oito coordenadas e oito derivadas entram na dinâmica original, com quatro comandos, vento e superfícies aerodinâmicas fixas em zero. `TiltRotor4dot0Model.m` também foi preservado; sua interface original de 27 entradas difere da interface de 23 entradas do wrapper de hover. Não são intercambiáveis sem adaptar a ordenação.
 
-A lei de controle continua `u_nominal = u_eq + K*(x - x_eq)`, com realimentação dos estados reais e as saturações originais: rotores entre 0 e 100 rev/s e torques entre −10 e 10 N·m. Ainda não há estados estimados na malha.
+A lei de controle é `u_nominal = u_eq + K*(x - x_ref(t))`, com `x_ref = x_eq` no hover padrão (a lei original), com realimentação dos estados reais e as saturações originais: rotores entre 0 e 100 rev/s e torques entre −10 e 10 N·m. Ainda não há estados estimados na malha.
 
 O ganho reutilizado é `LMI_GAINS_D.txt` (4×16), sem alteração dos valores. A inicialização verifica dimensões, resíduo do equilíbrio, Jacobianos numéricos da planta, sinal da realimentação, polos contínuos e estabilidade com Euler no passo original. O ganho contínuo `HINF_LMI_GAINS.txt` permanece como referência e é rejeitado para este passo de integração. **Essa validação é local e não constitui nova certificação do limite H∞ nem garantia de estabilidade global.**
 
-Alterações no modelo: renomeado para `hover.slx`; registros configurados para amostrar em `Ts`; amplitude dos degraus de vento parametrizada por `enableOriginalWind`; constante de torque direito corrigida de `tauL_eq` para `tauR_eq` (iguais no equilíbrio original). Topologia, dinâmica, lei de controle, saturações, integradores e solver foram preservados. O experimento padrão desativa temporariamente o vento por `SimulationInput`; os degraus históricos continuam no SLX. `StartParameters.m` mantém as mesmas tabelas/globais, carregadas relativamente à sua própria localização.
+Alterações no modelo: renomeado para `hover.slx`; registros configurados para amostrar em `Ts`; amplitude dos degraus de vento parametrizada por `enableOriginalWind`; constante de torque direito corrigida de `tauL_eq` para `tauR_eq` (iguais no equilíbrio original); constantes `q_eq`/`qp_eq` da realimentação trocadas por blocos *From Workspace* `q_ref`/`qp_ref`, amostrados em `Ts` e mantendo o último valor (no hover, a diferença para a versão anterior ficou abaixo de 1e-13). Topologia, dinâmica, lei de controle, saturações, integradores e solver foram preservados. O experimento padrão desativa temporariamente o vento por `SimulationInput`; os degraus históricos continuam no SLX. `StartParameters.m` mantém as mesmas tabelas/globais, carregadas relativamente à sua própria localização.
 
 O aviso de futura remoção da inicialização `Classic` no Simulink é conhecido e não impediu a execução. A configuração histórica foi mantida.
 
@@ -69,6 +79,8 @@ O aviso de futura remoção da inicialização `Classic` no Simulink é conhecid
 | `u` | N×4, comandos efetivamente aplicados após saturação |
 | `u_nominal` | N×4, comandos antes da saturação |
 | `wind` | N×3, vento externo [x,y,z], m/s |
+| `x_ref` | N×16, referência seguida pelo controlador, mesma ordem de `x_true` |
+| `trajectory` | Nome da trajetória (`"hover"` ou `"helix"`) |
 | `stateNames/stateUnits` | Nomes e unidades das colunas de estado |
 | `inputNames/inputUnits` | Nomes e unidades dos comandos |
 | `x_eq/u_eq/K/Ts` | Equilíbrio, ganho e passo utilizados |

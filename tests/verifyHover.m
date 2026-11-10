@@ -24,4 +24,12 @@ windCase = simulateHover(Duration=12,OriginalWind=true,SaveResults=false);
 assert(all(windCase.wind(windCase.t<10,:) == 0,'all'));
 assert(all(windCase.wind(windCase.t>=10,1) == 5));
 assert(all(windCase.wind(:,2:3) == 0,'all'));
-fprintf('PASS: gain rejection, equilibrium, roll recovery, timestamps, actuator limits and original wind steps.\n');
+helix = simulateHover(Duration=30,Trajectory="helix",SaveResults=false);
+assert(isequal(size(helix.x_ref),size(helix.x_true)));
+assert(max(vecnorm(helix.x_true(:,6:8)-helix.x_ref(:,6:8),2,2)) < 0.4, ...
+    'Helix position tracking error too large.');
+assert(isequal(helix.u,helix.u_nominal),'Helix saturated the actuators.');
+assert(max(helix.x_true(:,8)) > 0.9 && max(helix.x_true(:,6)) > 0.9, ...
+    'Helix did not move away from the equilibrium.');
+fprintf(['PASS: gain rejection, equilibrium, roll recovery, timestamps, actuator limits, ' ...
+    'original wind steps and helix tracking.\n']);

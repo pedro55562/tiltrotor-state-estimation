@@ -19,6 +19,7 @@ run('tests/verifySensors.m')      % measurement model, rates, noise statistics, 
 meas = generateMeasurements(result, Seed=1);  % 16-channel synthetic data, writes results/measurements.mat
 cfg = setupProject();             % paths + gain validation; returns config struct
 result = simulateHover(Duration=12, InitialState=x0, OriginalWind=true, SaveResults=false);
+run('experiments/runHelix.m')    % 30 s smooth climbing circle, writes results/helix.mat/.csv
 ```
 
 From a shell: `matlab -batch "runHover"` / `matlab -batch "run('tests/verifyHover.m')"`.
@@ -28,9 +29,9 @@ From a shell: `matlab -batch "runHover"` / `matlab -batch "run('tests/verifyHove
 ## Architecture
 
 - `setupProject.m` adds an **explicit** list of folders to the path (never use `addpath(genpath(...))` — older plant/library versions may be mixed in), asserts the project plant isn't shadowed, runs `StartParameters` (loads aero tables/globals from `plant/`), loads `controller/hoverDesign.mat` (numeric A, B, q_eq, qp_eq, u_eq, Ts extracted from historical objects) and validates `controller/LMI_GAINS_D.txt` via `validateHoverGain`. When adding new folders (e.g. subfolders of `sensors/` or `filters/`), add them to that list.
-- `simulation/simulateHover.m` builds a `Simulink.SimulationInput` for `simulation/hover.slx`, passing every parameter explicitly (no reliance on base workspace), runs fixed-step `ode1` at `Ts`, and asserts logged signals share timestamps, are finite and lie on the exact time grid. Returns/saves the `result` struct (`t`, `x_true`, `u`, `u_nominal`, `wind`, names/units, `x_eq`, `u_eq`, `K`, `Ts`, `validation`).
+- `simulation/simulateHover.m` builds a `Simulink.SimulationInput` for `simulation/hover.slx`, passing every parameter explicitly (no reliance on base workspace), runs fixed-step `ode1` at `Ts`, and asserts logged signals share timestamps, are finite and lie on the exact time grid. Returns/saves the `result` struct (`t`, `x_true`, `x_ref`, `trajectory`, `u`, `u_nominal`, `wind`, names/units, `x_eq`, `u_eq`, `K`, `Ts`, `validation`).
 - Plant: `plant/TiltRotor4dot0Trim_Hover.m` takes `[q(8); qp(8); u(4); wind(3)]` (23 inputs) and returns `qdd`. `plant/TiltRotor4dot0Model.m` is the original 27-input interface — **not interchangeable** with the hover wrapper without reordering inputs. The state derivative used everywhere is `f(x,v) = [x(9:16); TiltRotor4dot0Trim_Hover([x;v])]` (see `validateHoverGain.m`), which is the natural process model for the filters.
-- Control law (inside the SLX): `u_nominal = u_eq + K*(x - x_eq)` on **true** states, then saturation (rotors 0–100 rev/s, torques ±10 N·m). Filters are not in the loop; per the proposal they run offline on logged data.
+- Control law (inside the SLX): `u_nominal = u_eq + K*(x - x_ref(t))` on **true** states, where `x_ref` comes from the `q_ref`/`qp_ref` From Workspace blocks built by `simulation/referenceTrajectory.m` (`"hover"` = constant `x_eq`, `"helix"` = smooth climbing circle; selected with `simulateHover(Trajectory=...)`), then saturation (rotors 0–100 rev/s, torques ±10 N·m). Filters are not in the loop; per the proposal they run offline on logged data.
 - `validateHoverGain` checks trim residual, numerical Jacobians vs. saved A/B, feedback sign, and Euler discrete stability. `HINF_LMI_GAINS.txt` (continuous) must be rejected with `tiltrotor:UnstableGain` — the test relies on this.
 
 ## Conventions that matter

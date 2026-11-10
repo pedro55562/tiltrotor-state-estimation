@@ -1,11 +1,13 @@
 function result = simulateHover(options)
 %SIMULATEHOVER Run the original nonlinear plant and full-state H-infinity loop.
-% result = simulateHover(Duration=10, InitialState=x0, SaveResults=true)
+% result = simulateHover(Duration=10, InitialState=x0, Trajectory="hover", SaveResults=true)
+% Trajectory selects the reference x_ref(t) tracked by the gain (see referenceTrajectory).
 % Wind is zero by default. Original wind steps can be enabled explicitly.
 arguments
     options.Duration (1,1) double {mustBePositive,mustBeFinite} = 10
     options.InitialState double = []
     options.OriginalWind (1,1) logical = false
+    options.Trajectory (1,1) string {mustBeMember(options.Trajectory,["hover","helix"])} = "hover"
     options.SaveResults (1,1) logical = true
 end
 cfg = setupProject();
@@ -20,9 +22,12 @@ if bdIsLoaded(cfg.model)
     assert(strcmp(get_param(cfg.model,'FileName'),cfg.modelFile), ...
         'tiltrotor:ShadowedModel','A different hover model is already loaded.');
 end
+tGrid = (0:round(options.Duration/cfg.Ts))'*cfg.Ts;
+[qRef,qpRef] = referenceTrajectory(options.Trajectory,tGrid,cfg);
 in = Simulink.SimulationInput(cfg.model);
 vars = struct('K_v4Hover',cfg.K,'Ts',cfg.Ts,'q0',x0(1:8),'qp0',x0(9:16), ...
-    'q_eq',cfg.q_eq,'qp_eq',cfg.qp_eq,'nR_eq',cfg.u_eq(1), ...
+    'q_ref',struct('time',tGrid,'signals',struct('values',qRef,'dimensions',8)), ...
+    'qp_ref',struct('time',tGrid,'signals',struct('values',qpRef,'dimensions',8)),'nR_eq',cfg.u_eq(1), ...
     'nL_eq',cfg.u_eq(2),'tauR_eq',cfg.u_eq(3),'tauL_eq',cfg.u_eq(4),'enableOriginalWind',double(options.OriginalWind));
 names = fieldnames(vars);
 for k = 1:numel(names)
@@ -45,7 +50,7 @@ assert(isequal(size(result.x_true),[numel(result.t),16]) && ...
     'tiltrotor:LoggingShape','Unexpected state or input dimensions.');
 assert(all(isfinite([result.t,result.x_true,result.u,result.u_nominal,result.wind]),'all'), ...
     'tiltrotor:NonfiniteSimulation','Simulation produced NaN or Inf.');
-expectedTime = (0:round(options.Duration/cfg.Ts))'*cfg.Ts;
+expectedTime = tGrid;
 assert(isequal(size(expectedTime),size(result.t)) && ...
     max(abs(expectedTime-result.t)) < 1e-9, ...
     'tiltrotor:IncompleteSimulation','Simulation did not finish on the expected time grid.');
@@ -59,17 +64,19 @@ result.K = cfg.K;
 result.Ts = cfg.Ts;
 result.validation = cfg.validation;
 result.originalWind = options.OriginalWind;
+result.trajectory = options.Trajectory;
+result.x_ref = [qRef,qpRef];
 result.matlabVersion = version;
 result.generatedAt = char(datetime('now','TimeZone','UTC'));
 if options.SaveResults
     resultDir = fullfile(cfg.root,'results');
     if ~isfolder(resultDir), mkdir(resultDir); end
-    save(fullfile(resultDir,'hover.mat'),'result');
+    save(fullfile(resultDir,options.Trajectory+".mat"),'result');
     columns = [{'t_s'},cfg.stateNames,{'n_R','n_L','tau_R','tau_L', ...
         'n_R_nominal','n_L_nominal','tau_R_nominal','tau_L_nominal', ...
         'wind_x','wind_y','wind_z'}];
     data = array2table([result.t,result.x_true,result.u,result.u_nominal,result.wind], ...
         'VariableNames',columns);
-    writetable(data,fullfile(resultDir,'hover.csv'));
+    writetable(data,fullfile(resultDir,options.Trajectory+".csv"));
 end
 end
