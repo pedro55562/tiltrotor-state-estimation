@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Course project (Robótica Probabilística, UFMG): compare EKF vs. scaled UKF accuracy when estimating the 16 states of a tilt-rotor UAV near hover. The plant and H∞ full-state controller are imported and validated; synthetic sensors (`sensors/`) are implemented (see `sensors/README.md`); **filters (`filters/ekf/`, `filters/ukf_scaled/`) are not implemented yet** — those folders contain only placeholder READMEs. The proposal `2_Entrega___Rob_prob.pdf` (untracked) specifies the planned experiment: IMU + horizontal GPS + barometer + tilt-mechanism measurements, additive zero-mean Gaussian independent noise (diagonal R), a nominal scenario and a temporary GPS-outage scenario, and per-state RMSE over a single trajectory generated once and shared by both filters. Read its Section 3 before implementing sensors/filters.
+Course project (Robótica Probabilística, UFMG): compare EKF vs. scaled UKF accuracy when estimating the 16 states of a tilt-rotor UAV near hover. The plant and H∞ full-state controller are imported and validated; synthetic sensors (`sensors/`) are implemented (see `sensors/README.md`); an **attitude-only EKF** (φ, θ, ψ; gyro-driven prediction, accelerometer + magnetometer corrections, sympy-generated Jacobians) is implemented in `filters/ekf/` (see its README); the full 16-state EKF and the scaled UKF (`filters/ukf_scaled/`, placeholder README) are not implemented yet. The proposal `2_Entrega___Rob_prob.pdf` (untracked) specifies the planned experiment: IMU + horizontal GPS + barometer + tilt-mechanism measurements, additive zero-mean Gaussian independent noise (diagonal R), a nominal scenario and a temporary GPS-outage scenario, and per-state RMSE over a single trajectory generated once and shared by both filters. Read its Section 3 before implementing sensors/filters.
 
 README and folder docs are written in pt-BR.
 
@@ -20,11 +20,15 @@ meas = generateMeasurements(result, Seed=1);  % 16-channel synthetic data, write
 cfg = setupProject();             % paths + gain validation; returns config struct
 result = simulateHover(Duration=12, InitialState=x0, OriginalWind=true, SaveResults=false);
 run('experiments/runHelix.m')    % 30 s smooth climbing circle, writes results/helix.mat/.csv
+run('experiments/runAttitudeEKF.m')  % attitude EKF on the helix, figures in results/figures/ekf/
+run('tests/verifyAttitudeEKF.m')  % generated models vs measurementModel, Jacobians vs finite differences, EKF consistency
 ```
 
 From a shell: `matlab -batch "runHover"` / `matlab -batch "run('tests/verifyHover.m')"`.
 
 `Duration` must be a multiple of `Ts = 0.004` s; `InitialState` is a 16×1 column.
+
+`filters/ekf/attitudeProcess.m` and `attitudeMeasurement.m` are generated — edit `filters/ekf/deriveAttitudeJacobians.py` and rerun `python3 filters/ekf/deriveAttitudeJacobians.py` (needs sympy; no Symbolic Math Toolbox is installed). The full plant cannot be differentiated symbolically (table lookups with `floor`, saturations, `abs` in `GetCoefV2`/`GetCtNew2`).
 
 ## Architecture
 
