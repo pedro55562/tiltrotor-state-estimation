@@ -5,3 +5,4 @@ slprj/
 simulation/*.slx.r*
 
 .migration-backups/
+CLAUDE.md
